@@ -8,8 +8,3 @@ export function getOriginRecipeLink(source_path?: string) {
 
   return `https://cook.aiursoft.com/${source_path?.replace('.md', '')}`
 }
-
-// 是否为pc端
-export function isPC() {
-  return !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-}

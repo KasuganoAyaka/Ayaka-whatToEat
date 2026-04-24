@@ -30,6 +30,5 @@ __pycache__/
 .codex-preview.out.log
 .codex-preview.err.log
 
-public/assets/fonts/
 
 --host/
