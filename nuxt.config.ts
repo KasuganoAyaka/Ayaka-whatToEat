@@ -23,7 +23,7 @@ export default defineNuxtConfig({
       ],
       meta: [
         { name: 'description', content: appDescription },
-        { name: 'author', content: 'Ryanuo' },
+        { name: 'author', content: 'KasuganoAyaka' },
         { name: 'keywords', content: 'whatToEat, 吃什么, 菜谱, 决策工具, AI 推荐' },
         // 颜色与 PWA 支持
         { name: 'mobile-web-app-capable', content: 'yes' },
