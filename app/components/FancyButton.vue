@@ -5,313 +5,87 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="container">
-    <div class="button type--C">
-      <div class="button__line" />
-      <div class="button__line" />
-      <span class="button__text">{{ props.text }}</span>
-      <div class="button__drow1" />
-      <div class="button__drow2" />
-    </div>
-  </div>
+  <span class="fancy-button">
+    <span class="button-glow" />
+    <span class="button-content">
+      <span class="button-text">{{ props.text }}</span>
+      <span class="button-icon" aria-hidden="true">→</span>
+    </span>
+  </span>
 </template>
 
 <style scoped>
-.type--A {
-  --line_color: #555555;
-  --back_color: #ffecf6;
-}
-
-.type--B {
-  --line_color: #1b1919;
-  --back_color: #e9ecff;
-}
-
-.type--C {
-  --line_color: #00135c;
-  --back_color: #defffa;
-}
-
-.button {
+.fancy-button {
   position: relative;
-  z-index: 0;
-  width: 200px;
-  height: 50px;
-  text-decoration: none;
-  font-size: 18px;
-  font-weight: bold;
-  color: var(--line_color);
-  letter-spacing: 2px;
-  transition: all 0.3s ease;
-}
-
-.button__text {
-  display: flex;
-  justify-content: center;
+  display: inline-flex;
   align-items: center;
-  width: 100%;
-  height: 100%;
-}
-
-.button::before,
-.button::after,
-.button__text::before,
-.button__text::after {
-  content: '';
-  position: absolute;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--line_color);
-  transition: all 0.5s ease;
-}
-
-.button::before {
-  top: 0;
-  left: 54px;
-  width: calc(100% - 56px * 2 - 16px);
-}
-
-.button::after {
-  top: 0;
-  right: 54px;
-  width: 8px;
-}
-
-.button__text::before {
-  bottom: 0;
-  right: 54px;
-  width: calc(100% - 56px * 2 - 16px);
-}
-
-.button__text::after {
-  bottom: 0;
-  left: 54px;
-  width: 8px;
-}
-
-.button__line {
-  position: absolute;
-  top: 0;
-  width: 56px;
-  height: 100%;
+  justify-content: center;
+  min-width: min(250px, 72vw);
+  padding: 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(57, 197, 187, 0.46), rgba(102, 126, 234, 0.34));
+  box-shadow: 0 18px 40px rgba(57, 197, 187, 0.18);
   overflow: hidden;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
 }
 
-.button__line::before {
-  content: '';
+.fancy-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 55px rgba(57, 197, 187, 0.22);
+}
+
+.button-glow {
   position: absolute;
-  top: 0;
-  width: 150%;
-  height: 100%;
-  box-sizing: border-box;
-  border-radius: 300px;
-  border: solid 3px var(--line_color);
+  inset: -30%;
+  background:
+    radial-gradient(circle at 25% 50%, rgba(255, 255, 255, 0.85), transparent 24%),
+    radial-gradient(circle at 80% 45%, rgba(57, 197, 187, 0.28), transparent 22%);
+  opacity: 0.72;
+  transition: transform 0.35s ease;
 }
 
-.button__line:nth-child(1),
-.button__line:nth-child(1)::before {
-  left: 0;
+.fancy-button:hover .button-glow {
+  transform: translateX(8px);
 }
 
-.button__line:nth-child(2),
-.button__line:nth-child(2)::before {
-  right: 0;
-}
-
-.button:hover {
-  letter-spacing: 6px;
-}
-
-.button:hover::before,
-.button:hover .button__text::before {
-  width: 8px;
-}
-
-.button:hover::after,
-.button:hover .button__text::after {
-  width: calc(100% - 56px * 2 - 16px);
-}
-
-.button__drow1,
-.button__drow2 {
-  position: absolute;
-  z-index: -1;
-  border-radius: 16px;
-  transform-origin: 16px 16px;
-}
-
-.button__drow1 {
-  top: -16px;
-  left: 40px;
-  width: 32px;
-  height: 0;
-  transform: rotate(30deg);
-}
-
-.button__drow2 {
-  top: 44px;
-  left: 77px;
-  width: 32px;
-  height: 0;
-  transform: rotate(-127deg);
-}
-
-.button__drow1::before,
-.button__drow1::after,
-.button__drow2::before,
-.button__drow2::after {
-  content: '';
-  position: absolute;
-}
-
-.button__drow1::before {
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 32px;
-  border-radius: 16px;
-  transform-origin: 16px 16px;
-  transform: rotate(-60deg);
-}
-
-.button__drow1::after {
-  top: -10px;
-  left: 45px;
-  width: 0;
-  height: 32px;
-  border-radius: 16px;
-  transform-origin: 16px 16px;
-  transform: rotate(69deg);
-}
-
-.button__drow2::before {
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 32px;
-  border-radius: 16px;
-  transform-origin: 16px 16px;
-  transform: rotate(-146deg);
-}
-
-.button__drow2::after {
-  bottom: 26px;
-  left: -40px;
-  width: 0;
-  height: 32px;
-  border-radius: 16px;
-  transform-origin: 16px 16px;
-  transform: rotate(-262deg);
-}
-
-.button__drow1,
-.button__drow1::before,
-.button__drow1::after,
-.button__drow2,
-.button__drow2::before,
-.button__drow2::after {
-  background: var(--back_color);
-}
-
-.button:hover .button__drow1 {
-  animation: drow1 ease-in 0.06s;
-  animation-fill-mode: forwards;
-}
-
-.button:hover .button__drow1::before {
-  animation: drow2 linear 0.08s 0.06s;
-  animation-fill-mode: forwards;
-}
-
-.button:hover .button__drow1::after {
-  animation: drow3 linear 0.03s 0.14s;
-  animation-fill-mode: forwards;
-}
-
-.button:hover .button__drow2 {
-  animation: drow4 linear 0.06s 0.2s;
-  animation-fill-mode: forwards;
-}
-
-.button:hover .button__drow2::before {
-  animation: drow3 linear 0.03s 0.26s;
-  animation-fill-mode: forwards;
-}
-
-.button:hover .button__drow2::after {
-  animation: drow5 linear 0.06s 0.32s;
-  animation-fill-mode: forwards;
-}
-
-@keyframes drow1 {
-  0% {
-    height: 0;
-  }
-
-  100% {
-    height: 100px;
-  }
-}
-
-@keyframes drow2 {
-  0% {
-    width: 0;
-    opacity: 0;
-  }
-
-  10% {
-    opacity: 0;
-  }
-
-  11% {
-    opacity: 1;
-  }
-
-  100% {
-    width: 120px;
-  }
-}
-
-@keyframes drow3 {
-  0% {
-    width: 0;
-  }
-
-  100% {
-    width: 80px;
-  }
-}
-
-@keyframes drow4 {
-  0% {
-    height: 0;
-  }
-
-  100% {
-    height: 120px;
-  }
-}
-
-@keyframes drow5 {
-  0% {
-    width: 0;
-  }
-
-  100% {
-    width: 124px;
-  }
-}
-
-.container {
-  width: 100%;
-  margin-top: 32px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.button-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 28px;
+  border-radius: 999px;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-glass) 94%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
 }
 
-.button:not(:last-child) {
-  margin-bottom: 64px;
+.button-text {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--gradient-primary);
+  font-size: 0.92rem;
+  box-shadow: 0 8px 18px rgba(57, 197, 187, 0.26);
+  transition: transform 0.24s ease;
+}
+
+.fancy-button:hover .button-icon {
+  transform: translateX(3px);
 }
 </style>

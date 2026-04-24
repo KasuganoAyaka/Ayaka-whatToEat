@@ -4,7 +4,9 @@ import type { CurrentFood } from '~/types'
 const props = defineProps<{
   currentFood?: CurrentFood
 }>()
+
 const nameText = computed(() => replaceText(props.currentFood?.name))
+const hasResult = computed(() => nameText.value !== '神马')
 
 function onClickVideo() {
   window.open(`https://search.bilibili.com/all?keyword=${props.currentFood?.name}`, '_blank')
@@ -12,18 +14,126 @@ function onClickVideo() {
 </script>
 
 <template>
-  <a
-    :href="getOriginRecipeLink(currentFood?.source_path)"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="inline-block cursor-pointer"
-  >
-    <b
-      class="text-gray-900 font-bold underline-black underline-offset-10 underline-dashed transition-all hover:underline-cyan"
-      :class="{ underline: nameText !== '神马' }"
+  <span class="food-item">
+    <a
+      :href="getOriginRecipeLink(currentFood?.source_path)"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="food-link"
+      :class="{ empty: !hasResult }"
     >
-      {{ nameText }}
-    </b>
-  </a>
-  <svg v-if="nameText !== '神马'" xmlns="http://www.w3.org/2000/svg" class="ml-1 align-base op-70 inline-block cursor-pointer" width="24" height="24" viewBox="0 0 24 24" @click="onClickVideo"><path fill="currentColor" fill-rule="evenodd" d="M11.943 1.25h.114c2.309 0 4.118 0 5.53.19c1.444.194 2.584.6 3.479 1.494c.895.895 1.3 2.035 1.494 3.48c.19 1.411.19 3.22.19 5.529v.114c0 2.309 0 4.118-.19 5.53c-.194 1.444-.6 2.584-1.494 3.479c-.895.895-2.035 1.3-3.48 1.494c-1.411.19-3.22.19-5.529.19h-.114c-2.309 0-4.118 0-5.53-.19c-1.444-.194-2.584-.6-3.479-1.494c-.895-.895-1.3-2.035-1.494-3.48c-.19-1.411-.19-3.22-.19-5.529v-.114c0-2.309 0-4.118.19-5.53c.194-1.444.6-2.584 1.494-3.479c.895-.895 2.035-1.3 3.48-1.494c1.411-.19 3.22-.19 5.529-.19M6.25 2.982c-1.065.183-1.742.5-2.255 1.013c-.514.513-.83 1.19-1.013 2.255H6.25zm1.5-.162v3.43h3.5v-3.5c-1.395.002-2.54.011-3.5.07m5-.07v3.5h3.5V2.82c-.96-.059-2.105-.068-3.5-.07m5 .232V6.25h3.268c-.183-1.065-.5-1.742-1.013-2.255c-.513-.514-1.19-.83-2.255-1.013m3.43 4.768H2.82c-.07 1.126-.07 2.508-.07 4.25s0 3.124.07 4.25h18.36c.07-1.126.07-2.508.07-4.25s0-3.124-.07-4.25m-.162 10H17.75v3.268c1.065-.183 1.742-.5 2.255-1.013c.514-.513.83-1.19 1.013-2.255m-4.768 3.43v-3.43h-3.5v3.5c1.395-.002 2.54-.011 3.5-.07m-5 .07v-3.5h-3.5v3.43c.96.059 2.105.068 3.5.07m-5-.232V17.75H2.982c.183 1.065.5 1.742 1.013 2.255c.513.514 1.19.83 2.255 1.013m6.53-11.27l.05.034l.046.031c.49.33.927.623 1.235.907c.334.307.639.714.639 1.28s-.305.973-.639 1.28c-.308.284-.745.578-1.235.907l-.046.031l-.05.034c-.494.332-.938.63-1.312.803c-.392.181-.949.336-1.482-.016c-.49-.324-.624-.866-.68-1.3c-.056-.439-.056-1.016-.056-1.688v-.102c0-.672 0-1.25.056-1.688c.056-.434.19-.976.68-1.3c.533-.352 1.09-.198 1.482-.016c.373.173.818.471 1.311.803m-1.96.55l.018.008c.251.116.595.344 1.155.72c.55.371.89.601 1.102.797a.8.8 0 0 1 .154.177l-.003.007a.8.8 0 0 1-.151.17c-.213.196-.551.426-1.102.796c-.56.377-.904.605-1.155.72l-.019.01a2 2 0 0 1-.025-.154c-.043-.332-.044-.811-.044-1.549s.002-1.217.044-1.55q.012-.094.025-.152" clip-rule="evenodd" /></svg>
+      <span class="food-name">{{ nameText }}</span>
+    </a>
+
+    <button
+      v-if="hasResult"
+      type="button"
+      class="video-link"
+      aria-label="在 Bilibili 搜索相关视频"
+      @click="onClickVideo"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M11.943 1.25h.114c2.309 0 4.118 0 5.53.19c1.444.194 2.584.6 3.479 1.494c.895.895 1.3 2.035 1.494 3.48c.19 1.411.19 3.22.19 5.529v.114c0 2.309 0 4.118-.19 5.53c-.194 1.444-.6 2.584-1.494 3.479c-.895.895-2.035 1.3-3.48 1.494c-1.411.19-3.22.19-5.529.19h-.114c-2.309 0-4.118 0-5.53-.19c-1.444-.194-2.584-.6-3.479-1.494c-.895-.895-1.3-2.035-1.494-3.48c-.19-1.411-.19-3.22-.19-5.529v-.114c0-2.309 0-4.118.19-5.53c.194-1.444.6-2.584 1.494-3.479c.895-.895 2.035-1.3 3.48-1.494c1.411-.19 3.22-.19 5.529-.19M6.25 2.982c-1.065.183-1.742.5-2.255 1.013c-.514.513-.83 1.19-1.013 2.255H6.25zm1.5-.162v3.43h3.5v-3.5c-1.395.002-2.54.011-3.5.07m5-.07v3.5h3.5V2.82c-.96-.059-2.105-.068-3.5-.07m5 .232V6.25h3.268c-.183-1.065-.5-1.742-1.013-2.255c-.513-.514-1.19-.83-2.255-1.013m3.43 4.768H2.82c-.07 1.126-.07 2.508-.07 4.25s0 3.124.07 4.25h18.36c.07-1.126.07-2.508.07-4.25s0-3.124-.07-4.25m-.162 10H17.75v3.268c1.065-.183 1.742-.5 2.255-1.013c.514-.513.83-1.19 1.013-2.255m-4.768 3.43v-3.43h-3.5v3.5c1.395-.002 2.54-.011 3.5-.07m-5 .07v-3.5h-3.5v3.43c.96.059 2.105.068 3.5.07m-5-.232V17.75H2.982c.183 1.065.5 1.742 1.013 2.255c.513.514 1.19.83 2.255 1.013m6.53-11.27l.05.034l.046.031c.49.33.927.623 1.235.907c.334.307.639.714.639 1.28s-.305.973-.639 1.28c-.308.284-.745.578-1.235.907l-.046.031l-.05.034c-.494.332-.938.63-1.312.803c-.392.181-.949.336-1.482-.016c-.49-.324-.624-.866-.68-1.3c-.056-.439-.056-1.016-.056-1.688v-.102c0-.672 0-1.25.056-1.688c.056-.434.19-.976.68-1.3c.533-.352 1.09-.198 1.482-.016c.373.173.818.471 1.311.803m-1.96.55l.018.008c.251.116.595.344 1.155.72c.55.371.89.601 1.102.797a.8.8 0 0 1 .154.177l-.003.007a.8.8 0 0 1-.151.17c-.213.196-.551.426-1.102.796c-.56.377-.904.605-1.155.72l-.019.01a2 2 0 0 1-.025-.154c-.043-.332-.044-.811-.044-1.549s.002-1.217.044-1.55q.012-.094.025-.152" clip-rule="evenodd" /></svg>
+    </button>
+  </span>
 </template>
+
+<style scoped>
+.food-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  vertical-align: middle;
+}
+
+.food-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35em;
+  padding: 0.12em 0.38em 0.18em;
+  border-radius: 999px;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, background 0.24s ease, color 0.24s ease;
+}
+
+.food-link:hover {
+  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--accent-light) 82%, transparent);
+  box-shadow: 0 16px 34px rgba(57, 197, 187, 0.14);
+}
+
+.food-link.empty {
+  padding-inline: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.food-name {
+  display: inline-block;
+  max-width: min(12ch, 68vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background-image: linear-gradient(120deg, rgba(57, 197, 187, 0.2), rgba(102, 126, 234, 0.16));
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 100% 0.34em;
+  transition: background-size 0.24s ease, color 0.24s ease;
+}
+
+.food-link:hover .food-name {
+  color: var(--accent);
+  background-size: 100% 100%;
+}
+
+.food-link.empty .food-name {
+  background-image: none;
+}
+
+.video-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 84%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: transform 0.22s ease, color 0.22s ease, border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.video-link svg {
+  width: 22px;
+  height: 22px;
+}
+
+.video-link:hover {
+  transform: translateY(-2px);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-light) 84%, transparent);
+  box-shadow: 0 14px 30px rgba(57, 197, 187, 0.14);
+}
+
+@media (max-width: 640px) {
+  .food-item {
+    gap: 8px;
+  }
+
+  .video-link {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .food-name {
+    max-width: 9ch;
+  }
+}
+</style>

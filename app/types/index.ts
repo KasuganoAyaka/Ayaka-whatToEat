@@ -13,28 +13,30 @@ export interface Step {
 }
 
 export interface Recipe {
-  id: string
+  id?: string
   name: string
-  description: string
+  description?: string
+  link?: string
   source_path: string
-  image_path: string | null
+  image_path?: string | null
   category: string
-  difficulty: number
-  tags: string[]
-  servings: number
-  ingredients: Ingredient[]
-  steps: Step[]
-  prep_time_minutes: number | null
-  cook_time_minutes: number | null
-  total_time_minutes: number | null
-  additional_notes: string[]
+  difficulty?: number
+  tags?: string[]
+  servings?: number
+  ingredients?: Ingredient[]
+  steps?: Step[]
+  prep_time_minutes?: number | null
+  cook_time_minutes?: number | null
+  total_time_minutes?: number | null
+  additional_notes?: string[]
 }
 
 export interface RecipeResponse {
   recipes: Recipe[]
-  total: number
+  count: number
   categories: string[]
-  recipesNameList: string[]
+  total?: number
+  recipesNameList?: string[]
 }
 
 export type CurrentFood = Pick<Recipe, 'id' | 'name' | 'image_path' | 'description' | 'source_path'>

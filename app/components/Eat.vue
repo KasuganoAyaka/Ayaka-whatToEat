@@ -10,77 +10,77 @@ const { data } = await useFetch<RecipeResponse>('/api/recipes')
 const categories = computed(() => (data.value?.categories || []) as string[])
 const selectedCategories = useStorage<string[]>('selected-categories', [...categories.value])
 const isAllSelected = computed(() => selectedCategories.value.length === categories.value.length)
+const selectedCount = computed(() => selectedCategories.value.length)
+const heroHint = computed(() => isPlaying.value ? '灵感生成中，停下来就能锁定今晚的答案。' : '点一下开始，让今天的菜单自己冒出来。')
 const { playAnimation } = useEmojiAnimation()
 
-// 首次加载 categories 时默认选中全部具体分类
+const tagPalettes = [
+  { soft: 'rgba(57, 197, 187, 0.14)', border: 'rgba(57, 197, 187, 0.24)', strong: '#39c5bb', text: '#1c7e78' },
+  { soft: 'rgba(102, 126, 234, 0.14)', border: 'rgba(102, 126, 234, 0.24)', strong: '#667eea', text: '#4658b5' },
+  { soft: 'rgba(75, 192, 152, 0.14)', border: 'rgba(75, 192, 152, 0.24)', strong: '#4bc098', text: '#2d8b6d' },
+  { soft: 'rgba(255, 183, 77, 0.16)', border: 'rgba(255, 183, 77, 0.28)', strong: '#ffb74d', text: '#b87921' },
+  { soft: 'rgba(255, 138, 128, 0.16)', border: 'rgba(255, 138, 128, 0.28)', strong: '#ff8a80', text: '#c96057' },
+  { soft: 'rgba(129, 140, 248, 0.16)', border: 'rgba(129, 140, 248, 0.26)', strong: '#818cf8', text: '#5761ca' },
+  { soft: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.22)', strong: '#ec4899', text: '#b93372' },
+]
+
 const stopWatchCategories = watch(categories, (newVal) => {
   if (newVal && newVal.length) {
-    // 默认选中所有具体分类
     selectedCategories.value = [...newVal]
-    // 初始化完成后停止监听
     stopWatchCategories()
   }
 })
 
-// 颜色配置数组
-const colorClasses = [
-  { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-400', active: 'bg-blue-400', activeText: 'text-white', activeBorder: 'border-blue-500' },
-  { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-400', active: 'bg-red-400', activeText: 'text-white', activeBorder: 'border-red-500' },
-  { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-400', active: 'bg-green-400', activeText: 'text-white', activeBorder: 'border-green-500' },
-  { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300', active: 'bg-yellow-400', activeText: 'text-white', activeBorder: 'border-yellow-500' },
-  { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-400', active: 'bg-indigo-400', activeText: 'text-white', activeBorder: 'border-indigo-500' },
-  { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-400', active: 'bg-purple-400', activeText: 'text-white', activeBorder: 'border-purple-500' },
-  { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-400', active: 'bg-pink-400', activeText: 'text-white', activeBorder: 'border-pink-500' },
-  { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-500', active: 'bg-gray-500', activeText: 'text-white', activeBorder: 'border-gray-600' },
-  { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-400', active: 'bg-orange-400', activeText: 'text-white', activeBorder: 'border-orange-500' },
-]
-
-// 获取标签的emoji
 function getEmoji(tag: string) {
   return emojiMap[tag] || ''
 }
 
-// const randomIndex = computed(() => {
-//   return Math.floor(Math.random() * colorClasses.length)
-// })
+function getTagPalette(index: number) {
+  if (index < 0)
+    return tagPalettes[0]!
+  return tagPalettes[index % tagPalettes.length]!
+}
 
-// 获取标签的颜色类
-function getTagColorClasses(index: number, isActive: boolean) {
-  // const colorConfig
-  //   = index === -1
-  //     ? colorClasses[colorClasses.length - 2]!
-  //     : colorClasses[randomIndex.value]!
-  const colorConfig = colorClasses[colorClasses.length - 2]!
-
-  const { bg, text, border, active, activeText, activeBorder } = colorConfig
-
-  return isActive
-    ? `${active} ${activeText} ${activeBorder}`
-    : `${bg} ${text} ${border}`
+function getTagStyle(index: number) {
+  const palette = getTagPalette(index)
+  return {
+    '--tag-soft': palette.soft,
+    '--tag-border': palette.border,
+    '--tag-strong': palette.strong,
+    '--tag-text': palette.text,
+  }
 }
 
 let randomTimer: ReturnType<typeof setTimeout> | null = null
+let autoStopTimer: ReturnType<typeof setTimeout> | null = null
+const MAX_RANDOM_DURATION = 30_000
 
 function togglePlay() {
   if (isPlaying.value)
     stopRandom()
   else
     startRandom()
-  isPlaying.value = !isPlaying.value
 }
 
-// ✅ 改用递归随机器
 function startRandom() {
   if (!import.meta.client)
     return
 
+  isPlaying.value = true
   currentFood.value = undefined
   shakeTitle.value = true
+
+  if (autoStopTimer)
+    clearTimeout(autoStopTimer)
+
+  autoStopTimer = setTimeout(() => {
+    stopRandom()
+  }, MAX_RANDOM_DURATION)
 
   const loop = () => {
     const allFoods = data.value?.recipes || []
     const foods = selectedCategories.value.length > 0
-      ? allFoods.filter(r => selectedCategories.value.includes(r.category))
+      ? allFoods.filter(recipe => selectedCategories.value.includes(recipe.category))
       : allFoods
     const list = foods.length ? foods : allFoods
     const randomFood = list[Math.floor(Math.random() * list.length)]
@@ -94,10 +94,16 @@ function startRandom() {
 }
 
 function stopRandom() {
+  isPlaying.value = false
   shakeTitle.value = false
+
   if (randomTimer)
     clearTimeout(randomTimer)
   randomTimer = null
+
+  if (autoStopTimer)
+    clearTimeout(autoStopTimer)
+  autoStopTimer = null
 }
 
 function toggleTag(tag: string) {
@@ -120,7 +126,6 @@ function toggleTag(tag: string) {
     set.splice(idx, 1)
   }
 
-  // 如果空选，则默认选中第一个（一般是 'all'）
   if (set.length === 0 && categories.value.length)
     selectedCategories.value = [categories.value[1]!]
 }
@@ -132,23 +137,21 @@ function createFloatingText(text = '') {
 
   const temp = document.createElement('div')
   const colors = [
-    'rgba(156, 163, 175, 0.8)',
-    'rgba(209, 213, 219, 0.8)',
-    'rgba(243, 244, 246, 0.9)',
-    'rgba(200, 200, 200, 0.7)',
+    'rgba(57, 197, 187, 0.62)',
+    'rgba(102, 126, 234, 0.58)',
+    'rgba(75, 192, 152, 0.6)',
+    'rgba(255, 183, 77, 0.58)',
   ]
-  const sizes = ['0.8rem', '1rem', '1.2rem']
-  const rotate = (Math.random() - 0.5) * 20
+  const sizes = ['0.86rem', '1rem', '1.18rem']
+  const rotate = (Math.random() - 0.5) * 18
 
   temp.textContent = text
-  temp.className = 'absolute font-medium animate-float-up select-none whitespace-nowrap'
+  temp.className = 'floating-word'
   temp.style.color = colors[Math.floor(Math.random() * colors.length)]!
   temp.style.fontSize = sizes[Math.floor(Math.random() * sizes.length)]!
-  temp.style.left = `${Math.random() * 80 + 10}%`
-  temp.style.top = `${Math.random() * 80 + 10}%`
+  temp.style.left = `${Math.random() * 76 + 12}%`
+  temp.style.top = `${Math.random() * 68 + 14}%`
   temp.style.transform = `rotate(${rotate}deg)`
-  temp.style.filter = 'blur(0.5px)'
-  temp.style.textShadow = '0 0 4px rgba(255,255,255,0.4)'
 
   container.appendChild(temp)
   setTimeout(() => temp.remove(), 1600)
@@ -157,62 +160,383 @@ function createFloatingText(text = '') {
 onUnmounted(() => {
   if (randomTimer)
     clearTimeout(randomTimer)
+
+  if (autoStopTimer)
+    clearTimeout(autoStopTimer)
 })
 </script>
 
 <template>
-  <FluidCursor v-if="isPC()" />
-  <div class="bg-[#E9E9E9] min-h-screen relative overflow-hidden">
-    <Header />
-    <div
-      class="bg-[#E9E9E9] bg-[url('/pic/bg2.png')] transition-all inset-0 absolute z-0 bg-center"
-      :class="{ 'animate-paused': isPlaying }" :style="{ animation: `flow 16s linear infinite` }"
-    />
+  <div class="eat-page site-shell">
+    <div class="page-orb orb-left" />
+    <div class="page-orb orb-right" />
+    <div class="page-grid" />
 
-    <div id="temp_container" class="inset-0 absolute z-10 overflow-hidden" />
+    <main class="eat-main">
+      <div class="page-brand">
+        <img src="/logo.png" alt="Ayaka Eat logo" class="brand-avatar">
+        <span class="page-brand-text">Ayaka Eat</span>
+      </div>
 
-    <div class="px-4 flex flex-col min-h-screen items-center justify-center relative z-20">
-      <div class="mb-4 flex flex-wrap gap-3 items-center top-15 justify-center absolute">
-        <div class="flex flex-wrap gap-2 justify-center">
+      <section class="category-panel glass-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Category Filter</p>
+            <h2>先圈定今天的胃口范围</h2>
+          </div>
+          <p class="panel-note">
+            {{ isAllSelected ? '当前已开启全部分类，可以直接随机。' : `已选择 ${selectedCount} 个分类，结果会更聚焦。` }}
+          </p>
+        </div>
+
+        <div class="tag-list">
           <button
-            key="all"
             type="button"
-            class="text-xs font-medium px-2.5 py-0.5 border rounded-sm inline-flex gap-1 cursor-pointer select-none transition-all items-center"
-            :class="getTagColorClasses(-1, isAllSelected)" @click="toggleTag('all')"
+            class="filter-pill"
+            :class="{ active: isAllSelected }"
+            :style="getTagStyle(-1)"
+            @click="toggleTag('all')"
           >
+            <span class="pill-dot" />
             <span>全部</span>
           </button>
           <button
-            v-for="(c, index) in categories" :key="c" type="button"
-            class="text-xs font-medium px-2.5 py-0.5 border rounded-sm inline-flex gap-1 cursor-pointer select-none transition-all items-center"
-            :class="getTagColorClasses(index, selectedCategories.includes(c))" @click="toggleTag(c)"
+            v-for="(category, index) in categories"
+            :key="category"
+            type="button"
+            class="filter-pill"
+            :class="{ active: selectedCategories.includes(category) }"
+            :style="getTagStyle(index)"
+            @click="toggleTag(category)"
           >
-            <span v-if="getEmoji(c)">{{ getEmoji(c) }}</span>
-            {{ c }}
+            <span v-if="getEmoji(category)" class="pill-emoji">{{ getEmoji(category) }}</span>
+            <span>{{ category }}</span>
           </button>
         </div>
-      </div>
-      <div class="text-center w-full -mt-20">
-        <h1
-          class="text-[clamp(2rem,5vw,3rem)] text-gray-800 font-normal mb-6 whitespace-nowrap text-ellipsis overflow-hidden"
-          :class="{ 'animate-shake': shakeTitle }"
-        >
-          <span class="today">今天</span>
-          <span class="eat">吃</span>
-          <FoodItem :current-food="currentFood" />
-          <span class="punctuation">？</span>
-        </h1>
+      </section>
 
-        <button id="start" class="outline-none cursor-pointer" @click="togglePlay">
-          <FancyButton :text="isPlaying ? '停止' : '开始'" />
-        </button>
-      </div>
-    </div>
+      <section class="result-panel glass-panel">
+        <div id="temp_container" class="floating-layer" />
+
+        <div class="result-shell">
+          <p class="result-kicker">Tonight's Pick</p>
+          <h2 class="result-title" :class="{ 'animate-shake': shakeTitle }">
+            <span class="title-muted">今天</span>
+            <span class="title-accent accent-gradient-text">吃</span>
+            <FoodItem :current-food="currentFood" />
+            <span class="title-muted">？</span>
+          </h2>
+          <p class="result-tip">
+            {{ heroHint }}
+          </p>
+
+          <button id="start" type="button" class="start-button" @click="togglePlay">
+            <FancyButton :text="isPlaying ? '停止抽取' : '开始选择'" />
+          </button>
+        </div>
+      </section>
+
+      <footer class="page-footer" aria-label="版权信息">
+        <span class="footer-copy">© 2026 AyakaのBlog. 保留所有权利。</span>
+      </footer>
+    </main>
   </div>
 </template>
 
-<style>
-/* 动画定义 */
+<style scoped>
+.eat-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.page-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(12px);
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.orb-left {
+  top: 118px;
+  left: -120px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(57, 197, 187, 0.22) 0%, rgba(57, 197, 187, 0) 72%);
+}
+
+.orb-right {
+  right: -80px;
+  bottom: 30px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.18) 0%, rgba(102, 126, 234, 0) 74%);
+}
+
+.page-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), transparent 78%);
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.eat-main {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 108px 0 48px;
+}
+
+.category-panel,
+.result-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+}
+
+.result-panel::after {
+  content: '';
+  position: absolute;
+  inset: auto auto 0 0;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(57, 197, 187, 0.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.page-brand {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  align-self: center;
+  margin: 6px auto -4px;
+}
+
+.brand-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 16px 34px rgba(57, 197, 187, 0.16);
+  border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent);
+}
+
+.page-brand-text {
+  color: var(--text-primary);
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.panel-kicker,
+.result-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.panel-heading h2 {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.category-panel {
+  padding: 28px 30px 30px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.panel-heading h2 {
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+  font-weight: 700;
+}
+
+.panel-note {
+  max-width: 360px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.94rem;
+  line-height: 1.7;
+  text-align: right;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filter-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-soft);
+  color: var(--tag-text);
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, background 0.24s ease, color 0.24s ease, border-color 0.24s ease;
+}
+
+.filter-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--tag-strong) 18%, transparent);
+}
+
+.filter-pill.active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--tag-strong), color-mix(in srgb, var(--tag-strong) 70%, #ffffff));
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--tag-strong) 24%, transparent);
+}
+
+.pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+.pill-emoji {
+  font-size: 1rem;
+}
+
+.result-panel {
+  min-height: 390px;
+  padding: 30px;
+}
+
+.floating-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.result-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 330px;
+  text-align: center;
+}
+
+.result-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(2rem, 5.2vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+
+.title-muted {
+  color: var(--text-primary);
+}
+
+.title-accent {
+  padding: 0 4px;
+}
+
+.result-tip {
+  max-width: 560px;
+  margin: 18px auto 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.start-button {
+  margin-top: 28px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.page-footer {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+  padding: 18px 0 4px;
+}
+
+.page-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(420px, 72vw);
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0), rgba(102, 126, 234, 0.22), rgba(57, 197, 187, 0.26), rgba(102, 126, 234, 0.22), rgba(102, 126, 234, 0));
+}
+
+.footer-copy {
+  color: color-mix(in srgb, var(--text-secondary) 82%, white);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+:deep(.floating-word) {
+  position: absolute;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  text-shadow: 0 8px 20px rgba(255, 255, 255, 0.55);
+  filter: blur(0.2px);
+  user-select: none;
+  white-space: nowrap;
+  animation: floatUp 1.6s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-shake {
+  animation: shake 0.4s;
+}
+
 @keyframes shake {
   0% {
     transform: translateX(5px);
@@ -239,50 +563,6 @@ onUnmounted(() => {
   }
 }
 
-@keyframes flow {
-  0% {
-    background-position: 50% 0;
-  }
-
-  100% {
-    background-position: 50% -500px;
-  }
-
-  /* 半张图高度 */
-}
-
-@keyframes flash {
-  0% {
-    opacity: 0;
-    transform: scale(1.5);
-    color: transparent;
-    text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-}
-
-@keyframes dinnerTip {
-  0%,
-  100% {
-    opacity: 0;
-    transform: perspective(600px) translate3d(-50%, 7px, 0) scale(0.7) rotateY(180deg);
-  }
-
-  20%,
-  80% {
-    opacity: 1;
-    transform: perspective(600px) translate3d(-50%, 0, 0) rotateY(0deg);
-  }
-}
-
 @keyframes floatUp {
   0% {
     opacity: 0;
@@ -305,32 +585,73 @@ onUnmounted(() => {
   }
 }
 
-.animate-float-up {
-  animation: floatUp 1.6s ease-out forwards;
-  will-change: transform, opacity;
+@media (max-width: 900px) {
+  .eat-main {
+    padding-top: 94px;
+  }
+
+  .panel-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .panel-note {
+    max-width: none;
+    text-align: left;
+  }
 }
 
-.text-glow {
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
-}
+@media (max-width: 640px) {
+  .eat-main {
+    width: min(100% - 20px, 1100px);
+    gap: 18px;
+    padding-bottom: 28px;
+  }
 
-.animate-shake {
-  animation: shake 0.4s;
-}
+  .category-panel,
+  .result-panel {
+    border-radius: 26px;
+  }
 
-.animate-flow {
-  animation: flow 16s linear infinite;
-}
+  .category-panel,
+  .result-panel {
+    padding: 22px 18px;
+  }
 
-.animate-flash {
-  animation: flash 1.6s ease-out both;
-}
+  .page-brand {
+    gap: 12px;
+    margin-top: 0;
+  }
 
-.animate-dinnerTip {
-  animation: dinnerTip 3s 1s linear both;
-}
+  .brand-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+  }
 
-.animate-paused {
-  animation-play-state: paused;
+  .page-brand-text {
+    font-size: 1.5rem;
+  }
+
+  .result-shell {
+    min-height: 290px;
+  }
+
+  .result-title {
+    gap: 8px;
+  }
+
+  .filter-pill {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  .page-footer {
+    padding-top: 16px;
+  }
+
+  .footer-copy {
+    font-size: 0.88rem;
+  }
 }
 </style>

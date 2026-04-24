@@ -1,4 +1,3 @@
-import { pwa } from './app/config/pwa'
 import { appDescription, appName } from './app/constants/index'
 
 export default defineNuxtConfig({
@@ -7,7 +6,6 @@ export default defineNuxtConfig({
     '@unocss/nuxt',
     '@pinia/nuxt',
     '@nuxtjs/color-mode',
-    '@vite-pwa/nuxt',
     '@nuxt/eslint',
   ],
 
@@ -36,13 +34,13 @@ export default defineNuxtConfig({
         { property: 'og:type', content: 'website' },
         { property: 'og:title', content: appName },
         { property: 'og:description', content: appDescription },
-        { property: 'og:image', content: 'https://eat.ryanuo.cc/og-image.png' },
-        { property: 'og:url', content: 'https://eat.ryanuo.cc' },
+        { property: 'og:image', content: 'https://eat.ayakacloud.cn/og-image.png' },
+        { property: 'og:url', content: 'https://eat.ayakacloud.cn' },
         // Twitter Card
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:title', content: appName },
         { name: 'twitter:description', content: appDescription },
-        { name: 'twitter:image', content: 'https://eat.ryanuo.cc/og-image.png' },
+        { name: 'twitter:image', content: 'https://eat.ayakacloud.cn/og-image.png' },
       ],
     },
   },
@@ -84,6 +82,4 @@ export default defineNuxtConfig({
       },
     },
   },
-
-  pwa,
 })

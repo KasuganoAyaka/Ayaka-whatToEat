@@ -1,11 +1,11 @@
 // server/api/recipes.ts
-import type { Recipe } from '~/types'
+import type { Recipe, RecipeResponse } from '~/types'
+import { getRequestURL } from 'h3'
 
 // 获取远程菜谱
-async function fetchRecipes(): Promise<Recipe[]> {
+async function fetchRecipes(origin: string): Promise<Recipe[]> {
   try {
-    const baseURL = import.meta.dev ? 'http://localhost:3000' : 'https://eat.ryanuo.cc'
-    const recipes = await $fetch<Recipe[]>(`${baseURL}/recipes.json`)
+    const recipes = await $fetch<Recipe[]>(`${origin}/recipes.json`)
     return recipes as Recipe[]
   }
   catch (error) {
@@ -24,13 +24,17 @@ function getAllCategories(recipes: Recipe[]): string[] {
   return [...categories]
 }
 
-export default defineEventHandler(async () => {
-  const recipes = await fetchRecipes()
+export default defineEventHandler(async (event): Promise<RecipeResponse> => {
+  const origin = getRequestURL(event).origin
+  const recipes = await fetchRecipes(origin)
   const categories = getAllCategories(recipes)
+  const recipesNameList = recipes.map(recipe => recipe.name)
 
   return {
     count: recipes.length,
+    total: recipes.length,
     categories,
+    recipesNameList,
     recipes,
   }
 })
