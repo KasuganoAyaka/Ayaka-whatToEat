@@ -1,57 +1,97 @@
-import re
+import json
+from pathlib import Path
 
 import requests
-import markdown_to_json
-import json
 
 
-def fetch_markdown_to_json(url: str):
-    """从远程拉取 Markdown 并转换为 JSON"""
-    response = requests.get(url)
+HOW_TO_COOK_CONTENTS_API = (
+    "https://api.github.com/repos/Anduin2017/HowToCook/contents/dishes?ref=master"
+)
+
+CATEGORY_NAMES = {
+    "vegetable_dish": "素菜",
+    "meat_dish": "荤菜",
+    "aquatic": "水产",
+    "breakfast": "早餐",
+    "staple": "主食",
+    "semi-finished": "半成品加工",
+    "soup": "汤与粥",
+    "drink": "饮料",
+    "condiment": "酱料和其它材料",
+    "dessert": "甜品",
+}
+
+SKIP_CATEGORIES = {"template"}
+
+
+def fetch_json(url: str):
+    response = requests.get(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "Ayaka-Eat-Recipe-Crawler",
+        },
+        timeout=30,
+    )
     response.raise_for_status()
-    md_text = response.text
-
-    json_data = markdown_to_json.dictify(md_text)
-    return json_data
+    return response.json()
 
 
-def clean_data(data):
-    parsed_data = json.loads(json.dumps(data, ensure_ascii=False))
-    recipes = []
+def iter_markdown_files(url: str):
+    for item in fetch_json(url):
+        item_type = item.get("type")
+        item_path = item.get("path", "")
 
-    pattern = re.compile(r'\[([^]]+)]\(([^)]+)\)')
-
-    for item, content in parsed_data.items():
-        if '菜谱' not in content:
+        if item_type == "dir":
+            yield from iter_markdown_files(item["url"])
             continue
 
-        for tag, texts in content['菜谱'].items():
-            if tag == '按难度索引':
-                continue
+        if item_type == "file" and item_path.endswith(".md"):
+            yield item_path
 
-            for text in texts:
-                match = pattern.search(text)
-                if match:
-                    title, path = match.groups()
-                    recipes.append({
-                        "name": title,
-                        "category": tag,
-                        "link": path.replace('.md',''),
-                        "source_path": path,
-                    })
 
-    return recipes
+def to_recipe(path: str):
+    parts = path.split("/")
+    if len(parts) < 3:
+        return None
+
+    category_slug = parts[1]
+    if category_slug in SKIP_CATEGORIES:
+        return None
+
+    name = Path(parts[-1]).stem
+    category = CATEGORY_NAMES.get(category_slug, category_slug)
+
+    return {
+        "name": name,
+        "category": category,
+        "link": path.removesuffix(".md"),
+        "source_path": path,
+    }
+
+
+def fetch_recipes():
+    recipes = []
+
+    for path in iter_markdown_files(HOW_TO_COOK_CONTENTS_API):
+        recipe = to_recipe(path)
+        if recipe:
+            recipes.append(recipe)
+
+    return sorted(recipes, key=lambda item: (item["source_path"], item["name"]))
+
 
 def save_data(data):
-    with open('public/recipes.json', 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    output_path = Path("public/recipes.json")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def main():
-    url = "https://raw.githubusercontent.com/Anduin2017/HowToCook/refs/heads/master/README.md"
-    data = fetch_markdown_to_json(url)
-    cleaned_data = clean_data(data)
-    save_data(cleaned_data)
+    save_data(fetch_recipes())
 
 
 if __name__ == "__main__":

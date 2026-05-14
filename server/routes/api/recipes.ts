@@ -1,15 +1,16 @@
 // server/api/recipes.ts
 import type { Recipe, RecipeResponse } from '~/types'
-import { getRequestURL } from 'h3'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
-// 获取远程菜谱
-async function fetchRecipes(origin: string): Promise<Recipe[]> {
+// 获取本地菜谱
+async function fetchRecipes(): Promise<Recipe[]> {
   try {
-    const recipes = await $fetch<Recipe[]>(`${origin}/recipes.json`)
-    return recipes as Recipe[]
+    const json = await readFile(join(process.cwd(), 'public', 'recipes.json'), 'utf-8')
+    return JSON.parse(json) as Recipe[]
   }
   catch (error) {
-    console.error('获取远程菜谱数据失败:', error)
+    console.error('获取本地菜谱数据失败:', error)
     return []
   }
 }
@@ -24,9 +25,8 @@ function getAllCategories(recipes: Recipe[]): string[] {
   return [...categories]
 }
 
-export default defineEventHandler(async (event): Promise<RecipeResponse> => {
-  const origin = getRequestURL(event).origin
-  const recipes = await fetchRecipes(origin)
+export default defineEventHandler(async (): Promise<RecipeResponse> => {
+  const recipes = await fetchRecipes()
   const categories = getAllCategories(recipes)
   const recipesNameList = recipes.map(recipe => recipe.name)
 
