@@ -1,12 +1,12 @@
 import json
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZipFile
 
 import requests
 
 
-HOW_TO_COOK_CONTENTS_API = (
-    "https://api.github.com/repos/Anduin2017/HowToCook/contents/dishes?ref=master"
-)
+HOW_TO_COOK_ARCHIVE_URL = "https://github.com/Anduin2017/HowToCook/archive/refs/heads/master.zip"
 
 CATEGORY_NAMES = {
     "vegetable_dish": "素菜",
@@ -24,30 +24,27 @@ CATEGORY_NAMES = {
 SKIP_CATEGORIES = {"template"}
 
 
-def fetch_json(url: str):
+def fetch_archive():
     response = requests.get(
-        url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "Ayaka-Eat-Recipe-Crawler",
-        },
+        HOW_TO_COOK_ARCHIVE_URL,
+        headers={"User-Agent": "Ayaka-Eat-Recipe-Crawler"},
         timeout=30,
     )
     response.raise_for_status()
-    return response.json()
+    return ZipFile(BytesIO(response.content))
 
 
-def iter_markdown_files(url: str):
-    for item in fetch_json(url):
-        item_type = item.get("type")
-        item_path = item.get("path", "")
+def iter_markdown_files():
+    with fetch_archive() as archive:
+        for item_path in archive.namelist():
+            parts = item_path.split("/", 1)
+            if len(parts) != 2:
+                continue
 
-        if item_type == "dir":
-            yield from iter_markdown_files(item["url"])
-            continue
+            repo_path = parts[1]
 
-        if item_type == "file" and item_path.endswith(".md"):
-            yield item_path
+            if repo_path.startswith("dishes/") and repo_path.endswith(".md"):
+                yield repo_path
 
 
 def to_recipe(path: str):
@@ -73,7 +70,7 @@ def to_recipe(path: str):
 def fetch_recipes():
     recipes = []
 
-    for path in iter_markdown_files(HOW_TO_COOK_CONTENTS_API):
+    for path in iter_markdown_files():
         recipe = to_recipe(path)
         if recipe:
             recipes.append(recipe)
