@@ -16,7 +16,7 @@ function onClickVideo() {
 <template>
   <span class="food-item">
     <a
-      :href="getOriginRecipeLink(currentFood?.source_path)"
+      :href="getOriginRecipeLink(currentFood?.source_path, currentFood?.name)"
       target="_blank"
       rel="noopener noreferrer"
       class="food-link"
